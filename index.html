@@ -1,12 +1,124 @@
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8" />
-		<script src="https://cdn.jsdelivr.net/npm/vue"></script>
-	</head>
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
 
+		<title>Simple ToDo List</title>
+		<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+	<style>
+		body{
+			text-align:center;
+			background-color:#F6F6F4;
+		}
+		.post-button{
+			border-radius:10px;
+			border: none;
+			width:100px;
+			height:40px;
+			cursor:pointer;
+		}
+
+		.post-button:hover{
+			opacity: 0.6;
+		}
+
+		.listarea{
+			padding:0;
+		}
+
+		.item{
+			background-color:#FFFFFF;
+			border-radius:5px;
+			padding:7px;
+      margin-top:3px;
+      margin-bottom:3px;
+			list-style-type:none;
+			text-align:left;
+		}
+
+		.line{
+			text-decoration: line-through;
+		}
+	</style>
+	</head>
+	
 	<body>
+		<h1>シンプルToDoリスト</h1>
+		<div id="app-1">
+			<div id="todo-list">
+				<ul class="listarea">
+					<li class="item" v-for="(todoitem,index) in todolist" v-bind:key="todoitem.id">
+						<input type="checkbox" @change="checked" />
+						<span class="todoitem">
+							{{ todoitem }}
+						</span>
+					</li>
+				</ul>
+			</div>
+			<div id="app-button">
+				<form method="post" name="simpletodolist" v-on:submit.prevent="">
+					<input id="textbox" name="textbox" type="text" placeholder="タスクの追加" />
+					<input @click="post" type="button" value="追加" class="post-button" />
+				</form>
+			</div>
+		</div>
+
 		<script>
-			
+			var app1 = new Vue({
+				el: '#app-1',
+				data: {
+					todolist: [],
+				},
+				mounted: function(){
+							fetch('/data',{
+							  method: 'GET',
+							})
+							.then(res => res.json())
+							.then(data => {
+								
+								for(i = 0; i < data.data.length; i++){
+									this.todolist.push(data.data[i].post);
+								}
+							})
+							.catch((error) => { console.error('Error: ', error); });
+						
+				},
+				methods: {
+
+          checked: function(e){
+						let elements = document.getElementsByTagName("input");
+						elements = [].slice.call(elements);
+						let index = elements.indexOf(e.target);
+						document.getElementsByClassName("todoitem")[index].classList.toggle("line");
+					},
+
+					post: function(){
+							//this.todolist.push()
+							
+							let formData = new FormData();
+							formData.append('textbox', document.getElementById("textbox").value);
+							fetch('/add',{
+							  method: 'POST',
+								/*
+								credentials: 'same-origin',
+							  headers: {
+							    'Content-Type': 'application/x-www-form-urlencoded'
+							  },
+								*/
+							  body: formData,
+							})
+							.then(res => res.json())
+							.then(data => {
+								this.todolist.push(data.post);
+								document.getElementById("textbox").value = "";
+							})
+							.catch((error) => { console.error('Error: ', error); });
+						
+					}
+				},
+			})
 		</script>
 	</body>
 </html>

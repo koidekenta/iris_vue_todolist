@@ -1,0 +1,19 @@
+{
+  "name": "test_iris",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koidekenta/iris_vue_todolist.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/koidekenta/iris_vue_todolist/issues"
+  },
+  "homepage": "https://github.com/koidekenta/iris_vue_todolist#readme"
+}
