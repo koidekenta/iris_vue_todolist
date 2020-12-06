@@ -6,6 +6,7 @@ import(
 	"github.com/jinzhu/gorm"
   "fmt"
 	"time"
+	"strconv"
   //"reflect"
 )
 
@@ -26,15 +27,15 @@ func main(){
 	})
 
 	app.Get("/login", func(ctx iris.Context){
-		ctx.ServeFile("./index.html")
+		ctx.ServeFile("./login.html")
 	})
 
   app.Get("/logout", func(ctx iris.Context){
-		ctx.ServeFile("./index.html")
+		
 	})
 
 	app.Get("/signup", func(ctx iris.Context){
-		ctx.ServeFile("./index.html")
+		ctx.ServeFile("./signup.html")
 	})
 
 	app.Get("/data", func(ctx iris.Context){
@@ -50,25 +51,29 @@ func main(){
 		todoitem := ctx.PostValue("textbox")
 
 		if todoitem != "" {
-			err := addData(todoitem)
+			id, err := addData(todoitem)
       if err != nil {
 				ctx.JSON(iris.Map{"message":"post error."})
       }else{
-				ctx.JSON(iris.Map{"message":"success.", "post": todoitem})
+				ctx.JSON(iris.Map{"message":"success.", "ID": id, "post": todoitem})
       }
 		}else{
 			ctx.JSON(iris.Map{"message":"not a post."})
 		}
 	})
 
-	app.Run(iris.Addr(":5000"))
-	
-  
+  app.Post("/delete", func(ctx iris.Context){
+		delete_id, _ := strconv.Atoi(ctx.PostValue("delete_id"))
 
-/*
-	addData("問題なく追加できるようです")
-  findData()
-*/
+		err := deleteData(delete_id);
+		if err != nil {
+      ctx.JSON(iris.Map{"message":"not deleted.", "status": "-1"})
+		}else{
+      ctx.JSON(iris.Map{"message":"success", "status": "0"})
+		}
+	})
+
+	app.Run(iris.Addr(":5000"))
 }
 
 func findData() (error, []*Posts) {
@@ -89,7 +94,7 @@ func findData() (error, []*Posts) {
  return error, result
 }
 
-func addData(post string) error{
+func addData(post string) (int, error){
 	db, err := sqlConnect()
 	if err != nil {
 		panic(err.Error())
@@ -98,16 +103,22 @@ func addData(post string) error{
 	}
 	defer db.Close()
 
-  error := db.Create(&Posts{
-		Post: post,
-    Created: getDate(),
-	}).Error
+	p := Posts{Post: post,Created: getDate()}
+  er := db.Create(&p).Error
 
-	return error
+	return p.ID, er
 }
 
-func deleteData(){
-
+func deleteData(delete_id int) error{
+	db, err := sqlConnect()
+	if err != nil {
+		panic(err.Error())
+	}else{
+		fmt.Println("DB接続成功")
+	}
+	defer db.Close()
+	err = db.Delete(&Posts{}, delete_id).Error
+  return err;
 }
 
 func sqlConnect() (database *gorm.DB, err error){

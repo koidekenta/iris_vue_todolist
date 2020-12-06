@@ -9,6 +9,8 @@
 		<script src="https://cdn.jsdelivr.net/npm/vue"></script>
 	<style>
 		body{
+			margin:0;
+			padding:0;
 			text-align:center;
 			background-color:#F6F6F4;
 		}
@@ -32,15 +34,43 @@
 			background-color:#FFFFFF;
 			border-radius:5px;
 			padding:7px;
-      margin-top:3px;
-      margin-bottom:3px;
+      margin:2px auto;
+			width:90%;
 			list-style-type:none;
 			text-align:left;
+			opacity:1;
+			display:flex;
+		}
+
+    .todoitem{
+			display:inline-block;
 		}
 
 		.line{
 			text-decoration: line-through;
 		}
+
+    .hide{
+			transition-duration: .5s;
+      transition-property:opacity, transform;
+			opacity: 0;
+			transform: translate(100px, 0px);
+		}
+
+		#textbox{
+			width:30%;
+			height:30px;
+			border-radius:5px;
+			padding:5px 10px;
+			border:solid 1px #ccc;
+		}
+
+		.delete_icon{
+			cursor: pointer;
+			display:inline-block;
+			margin:0 0 0 auto;
+		}
+
 	</style>
 	</head>
 	
@@ -49,20 +79,34 @@
 		<div id="app-1">
 			<div id="todo-list">
 				<ul class="listarea">
-					<li class="item" v-for="(todoitem,index) in todolist" v-bind:key="todoitem.id">
-						<input type="checkbox" @change="checked" />
-						<span class="todoitem">
-							{{ todoitem }}
+					<li class="item" @transitionend="te($event, index)" v-bind:class="{hide: todoitem.is_animated}" v-for="(todoitem,index) in todolist" v-bind:key="todoitem.id">
+						<input type="checkbox" v-model="todoitem.is_checked" class="cb" @change="deleted($event, index)" />
+						<span class="todoitem" v-bind:class="{line: todoitem.is_hided}">
+							{{ todoitem.post }}
 						</span>
+						<div class="delete_icon" @click="delete_post($event, index, 'uncomplete')">
+						<svg width="15px" height="15px">
+								<path d="M 0 0 L 15 15 M 15 0 L 0 15" stroke="#ccc" fill="transparent" stroke-width="1">
+						</svg>
+						</div>
 					</li>
 				</ul>
 			</div>
 			<div id="app-button">
-				<form method="post" name="simpletodolist" v-on:submit.prevent="">
+				<form method="post" name="simpletodolist" v-on:submit.prevent>
 					<input id="textbox" name="textbox" type="text" placeholder="タスクの追加" />
 					<input @click="post" type="button" value="追加" class="post-button" />
 				</form>
 			</div>
+			<h1>完了したタスク</h1>
+				<ul class="listarea">
+					<li class="item" @transitionend="back_transiton($event, index)" v-bind:class="{hide: todoitem.is_animated}" v-for="(todoitem,index) in completed_todolist" v-bind:key="todoitem.id">
+						<input type="checkbox" v-model="todoitem.is_checked" class="cb" @change="back($event, index)" />
+						<span class="todoitem" v-bind:class="{line: todoitem.is_hided}">
+							{{ todoitem.post }}
+						</span>
+					</li>
+				</ul>
 		</div>
 
 		<script>
@@ -70,6 +114,7 @@
 				el: '#app-1',
 				data: {
 					todolist: [],
+					completed_todolist: []
 				},
 				mounted: function(){
 							fetch('/data',{
@@ -77,41 +122,96 @@
 							})
 							.then(res => res.json())
 							.then(data => {
-								
+								console.log(data);
 								for(i = 0; i < data.data.length; i++){
-									this.todolist.push(data.data[i].post);
+									this.todolist.push({
+										post_id: data.data[i].ID,
+										post: data.data[i].post,
+										is_hided: false,
+										is_checked: false,
+										is_animated: false,
+									});
 								}
 							})
 							.catch((error) => { console.error('Error: ', error); });
-						
 				},
 				methods: {
+					delete_post: function(e, idx, location){
 
-          checked: function(e){
-						let elements = document.getElementsByTagName("input");
-						elements = [].slice.call(elements);
-						let index = elements.indexOf(e.target);
-						document.getElementsByClassName("todoitem")[index].classList.toggle("line");
-					},
-
-					post: function(){
-							//this.todolist.push()
-							
 							let formData = new FormData();
-							formData.append('textbox', document.getElementById("textbox").value);
-							fetch('/add',{
+							formData.append('delete_id', this.todolist[idx].post_id);
+
+							fetch('/delete',{
 							  method: 'POST',
-								/*
-								credentials: 'same-origin',
-							  headers: {
-							    'Content-Type': 'application/x-www-form-urlencoded'
-							  },
-								*/
 							  body: formData,
 							})
 							.then(res => res.json())
 							.then(data => {
-								this.todolist.push(data.post);
+								if(data.message === "success"){
+									this.todolist.splice(idx, 1);
+								}
+							})
+							.catch((error) => { console.error('Error: ', error); });
+						
+					},
+					back: function(e, index){
+						this.completed_todolist[index].is_hided = false;
+						this.completed_todolist[index].is_checked = false;
+						this.completed_todolist[index].is_animated = true;
+					},
+
+					back_transiton: function(e, index){
+							if(e.propertyName === "transform"){
+								console.log("トランジション完了",index);
+									this.todolist.push({
+										post_id: this.completed_todolist[index].post_id,
+										post: this.completed_todolist[index].post,
+										is_hided: false,
+										is_checked: false,
+										is_animated: false
+									});
+									this.completed_todolist = this.completed_todolist.filter(n => n.is_checked === true);
+							}
+					},
+
+					deleted: function(e, index){
+						this.todolist[index].is_hided = true;
+						this.todolist[index].is_checked = true;
+						this.todolist[index].is_animated = true;
+					},
+
+					te: function(e, index){
+            console.log(e.propertyName);
+						if(e.propertyName === "transform"){
+							this.completed_todolist.push({
+								post_id: this.todolist[index].post_id,
+								post: this.todolist[index].post,
+								is_hided: true,
+								is_checked: true,
+								is_animated: false
+							});
+							this.todolist = this.todolist.filter(n => n.is_checked === false);
+							console.log(this.completed_todolist);
+						}
+					},
+
+					post: function(){
+
+							let formData = new FormData();
+							formData.append('textbox', document.getElementById("textbox").value);
+							fetch('/add',{
+							  method: 'POST',
+							  body: formData,
+							})
+							.then(res => res.json())
+							.then(data => {
+								this.todolist.push({
+									post_id: data.ID,
+									post: data.post,
+									is_hided: false,
+									is_checked: false,
+									is_animated: false,
+								});
 								document.getElementById("textbox").value = "";
 							})
 							.catch((error) => { console.error('Error: ', error); });
