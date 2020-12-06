@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/koidekenta/iris_vue_todolist/issues"
   },
-  "homepage": "https://github.com/koidekenta/iris_vue_todolist#readme"
+  "homepage": "https://github.com/koidekenta/iris_vue_todolist#readme",
+  "devDependencies": {
+    "gulp": "^4.0.2",
+    "gulp-sass": "^4.1.0"
+  }
 }
